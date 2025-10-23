@@ -97,19 +97,35 @@ echo ""
 echo -e "${BLUE}🔧 Starte PDF-Erstellung...${NC}"
 echo ""
 
-# Run build with progress
-python edubase_to_pdf.py build \
-    --input "$INPUT_DIR" \
-    --output "$OUTPUT_FILE" \
-    --lang deu \
-    --jobs 6 \
-    --optimize 2 \
-    --deskew \
-    --crop --crop-threshold 248 --crop-margin 10 \
-    --dpi 300 \
-    --title "$BOOK_TITLE" \
-    --author "$BOOK_AUTHOR" \
-    --subject "Persönliche Studienkopie (OCR)"
+# Check which CLI to use (prefer new CLI with better UX)
+if [ -f "edubase_cli.py" ]; then
+    # Use new CLI with Rich output
+    python3 edubase_cli.py build \
+        --input "$INPUT_DIR" \
+        --output "$OUTPUT_FILE" \
+        --lang deu \
+        --jobs 6 \
+        --optimize 2 \
+        --dpi 300 \
+        --crop \
+        --title "$BOOK_TITLE" \
+        --author "$BOOK_AUTHOR" \
+        --subject "Persönliche Studienkopie (OCR)"
+else
+    # Fallback to old CLI
+    python3 edubase_to_pdf.py build \
+        --input "$INPUT_DIR" \
+        --output "$OUTPUT_FILE" \
+        --lang deu \
+        --jobs 6 \
+        --optimize 2 \
+        --deskew \
+        --crop --crop-threshold 248 --crop-margin 10 \
+        --dpi 300 \
+        --title "$BOOK_TITLE" \
+        --author "$BOOK_AUTHOR" \
+        --subject "Persönliche Studienkopie (OCR)"
+fi
 
 # Get file info
 if [ -f "$OUTPUT_FILE" ]; then

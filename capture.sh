@@ -116,16 +116,28 @@ echo ""
 echo -e "${BLUE}────────────────────────────────────────────────────────────────────${NC}"
 echo ""
 
-# Run capture with nice output
-python edubase_to_pdf.py capture \
-    --book-url "$BOOK_URL" \
-    --pages $PAGES \
-    --out-dir "$OUT_DIR" \
-    --user-data-dir ~/.pw_edubase \
-    --advance-with-keys \
-    --delay-ms 1500 \
-    --fullpage \
-    --crop --crop-threshold 248 --crop-margin 10
+# Check which CLI to use (prefer new CLI with better UX)
+if [ -f "edubase_cli.py" ]; then
+    # Use new CLI with Rich output
+    python3 edubase_cli.py capture \
+        --book-url "$BOOK_URL" \
+        --pages $PAGES \
+        --out-dir "$OUT_DIR" \
+        --user-data-dir ~/.edubase_browser \
+        --delay-ms 1500 \
+        --crop
+else
+    # Fallback to old CLI
+    python3 edubase_to_pdf.py capture \
+        --book-url "$BOOK_URL" \
+        --pages $PAGES \
+        --out-dir "$OUT_DIR" \
+        --user-data-dir ~/.pw_edubase \
+        --advance-with-keys \
+        --delay-ms 1500 \
+        --fullpage \
+        --crop --crop-threshold 248 --crop-margin 10
+fi
 
 # Success message
 CAPTURED_IMAGES=$(ls -1 "$OUT_DIR"/*.png 2>/dev/null | wc -l)

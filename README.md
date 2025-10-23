@@ -22,7 +22,7 @@ Dieses Tool macht Screenshots von deinem Edubase-Buch und wandelt sie in ein dur
 
 ## 📋 Voraussetzungen
 
-### Ubuntu 24.04 / WSL2 / Debian-basiert
+### 🐧 Linux / macOS / 🪟 WSL2 (Empfohlen)
 
 ```bash
 sudo apt update
@@ -36,6 +36,17 @@ sudo apt install -y \
     poppler-utils
 ```
 
+### 🪟 Windows (Nativ)
+
+**Screenshots funktionieren perfekt!** Für OCR wird WSL2 empfohlen.
+
+📖 **Siehe [Windows Setup Guide](docs/WINDOWS_SETUP.md)** für detaillierte Anleitung.
+
+**Kurzversion:**
+1. Install Python 3.8+ von https://www.python.org/
+2. Für OCR: Installiere WSL2 mit `wsl --install`
+3. Folge den Schritten im Windows Guide
+
 **Fertig!** Mehr brauchst du nicht installieren.
 
 ---
@@ -44,9 +55,8 @@ sudo apt install -y \
 
 ### 1️⃣ Projekt herunterladen & Setup
 
+**Linux / macOS / WSL2:**
 ```bash
-cd /home/artur/repos/edubase-exporter
-
 # Python Virtual Environment erstellen
 python3 -m venv .venv
 source .venv/bin/activate
@@ -58,14 +68,39 @@ pip install -r requirements.txt
 playwright install chromium
 ```
 
+**Windows (PowerShell):**
+```powershell
+# Python Virtual Environment erstellen
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+
+# Python-Pakete installieren
+pip install -r requirements.txt
+
+# Browser installieren
+playwright install chromium
+```
+
 **Das war's!** Setup ist fertig.
+
+💡 **Tipp:** Nutze den neuen CLI: `python edubase_cli.py --help`
 
 ---
 
 ### 2️⃣ Screenshots erstellen
 
+**Linux / macOS / WSL2:**
 ```bash
 ./capture.sh
+# Oder mit neuem CLI:
+python edubase_cli.py capture --book-url "URL" --pages NUM
+```
+
+**Windows:**
+```powershell
+.\capture.ps1
+# Oder:
+python edubase_cli.py capture --book-url "URL" --pages NUM
 ```
 
 **Was passiert:**
@@ -86,9 +121,21 @@ playwright install chromium
 
 ### 3️⃣ PDF erstellen
 
+**Linux / macOS / WSL2:**
 ```bash
 ./build_pdf.sh
+# Oder mit neuem CLI:
+python edubase_cli.py build --input ./input_pages --output ./output/book.pdf
 ```
+
+**Windows:**
+```powershell
+.\build.ps1
+# Oder:
+python edubase_cli.py build --input ./input_pages --output ./output/book.pdf
+```
+
+💡 **Windows-Nutzer:** Für OCR wird WSL2 empfohlen. Siehe [Windows Setup Guide](docs/WINDOWS_SETUP.md).
 
 **Was passiert:**
 
@@ -643,7 +690,7 @@ A: Ja! Ändere `--dpi 200` statt 300 für kleinere Dateigröße.
 A: Ja, erhöhe `--jobs` in `build_pdf.sh` (max. = CPU-Kerne).
 
 **Q: Funktioniert es auch mit Windows?**  
-A: Ja, mit WSL2 (Windows Subsystem for Linux). Native Windows: nein.
+A: Ja! Screenshots funktionieren nativ. Für OCR nutze WSL2 (empfohlen) oder Docker. Siehe [Windows Setup Guide](docs/WINDOWS_SETUP.md).
 
 **Q: Kann ich die Screenshots behalten?**  
 A: Ja! Lass `input_pages/` einfach da für spätere Nutzung.

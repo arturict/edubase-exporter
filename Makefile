@@ -1,10 +1,12 @@
-.PHONY: help install test coverage clean run-capture run-build format
+.PHONY: help setup install check test coverage clean run-capture run-build format
 
 help:
 	@echo "📚 Edubase to PDF Exporter - Available Commands"
 	@echo ""
 	@echo "Setup:"
-	@echo "  make install     - Install dependencies & setup project"
+	@echo "  make setup       - Run automated setup script (recommended)"
+	@echo "  make install     - Install dependencies & setup project (manual)"
+	@echo "  make check       - Check system requirements"
 	@echo ""
 	@echo "Running:"
 	@echo "  make run-capture - Run screenshot capture"
@@ -17,6 +19,16 @@ help:
 	@echo "Maintenance:"
 	@echo "  make clean       - Remove temporary files"
 	@echo "  make format      - Format Python code (requires black)"
+	@echo ""
+	@echo "CLI Usage:"
+	@echo "  python edubase_cli.py --help"
+	@echo "  python edubase_cli.py capture --help"
+	@echo "  python edubase_cli.py build --help"
+
+setup:
+	@echo "🚀 Running automated setup..."
+	@chmod +x setup.sh
+	@./setup.sh
 
 install:
 	@echo "🔧 Installing dependencies..."
@@ -25,6 +37,12 @@ install:
 	.venv/bin/pip install -r requirements.txt
 	.venv/bin/playwright install chromium
 	@echo "✅ Installation complete!"
+	@echo ""
+	@echo "💡 Tip: Use 'make check' to verify installation"
+
+check:
+	@echo "🔍 Checking system..."
+	@. .venv/bin/activate && python edubase_cli.py check || python3 edubase_cli.py check 2>/dev/null || echo "⚠️  Please activate venv first: source .venv/bin/activate"
 
 test:
 	@echo "🧪 Running tests..."

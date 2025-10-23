@@ -2,7 +2,9 @@ playwright
 pillow
 img2pdf
 pikepdf
-tqdm
+click>=8.1.0
+rich>=13.0.0
+colorama>=0.4.6
 
 # Testing dependencies (optional)
 pytest>=7.4.0
