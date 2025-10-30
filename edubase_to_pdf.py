@@ -86,17 +86,39 @@ def capture_pages(
     with sync_playwright() as p:
         print("\n🌐 Starte Browser (Chromium)...")
         
+        # Detect WSL environment
+        import platform
+        is_wsl = 'microsoft' in platform.uname().release.lower()
+        
+        # Browser args optimized for WSL2 + WSLg
+        browser_args = [
+            '--disable-blink-features=AutomationControlled',
+            '--disable-dev-shm-usage',  # Avoid /dev/shm issues in containers/WSL
+        ]
+        if is_wsl:
+            browser_args.extend([
+                '--no-sandbox',  # Required for WSL2 environment
+                '--disable-setuid-sandbox',  # Additional sandbox bypass for WSL
+                '--disable-gpu',  # Disable GPU acceleration (better compatibility with WSLg)
+                '--disable-software-rasterizer',  # Use default rasterizer
+            ])
+        
+        # Viewport configuration - standard resolution for consistency
+        # WSL2 with WSLg (Wayland) handles display scaling automatically
+        viewport_config = {'width': 1920, 'height': 1080}
+        
+        # Device scale factor: 1.0 for WSL2 + WSLg
+        # The WSLg compositor handles HiDPI scaling natively
+        device_scale = 1.0
+        
         # Persistent context for session reuse
         context = p.chromium.launch_persistent_context(
             user_data_dir=str(user_data_dir),
             headless=False,
-            viewport={'width': 1920, 'height': 1080},
-            device_scale_factor=1.0,
-            # Performance optimizations
-            args=[
-                '--disable-blink-features=AutomationControlled',
-                '--disable-dev-shm-usage',
-            ],
+            viewport=viewport_config,
+            device_scale_factor=device_scale,
+            args=browser_args,
+            ignore_default_args=['--enable-automation'],  # Hide automation indicators
         )
         
         # Set default timeouts
@@ -104,6 +126,23 @@ def capture_pages(
         context.set_default_navigation_timeout(30000)
 
         page = context.pages[0] if context.pages else context.new_page()
+        
+        # Maximize window for full visibility
+        try:
+            # WSL2 + WSLg: Window management via JavaScript
+            page.evaluate("""() => {
+                window.moveTo(0, 0);
+                window.resizeTo(screen.availWidth, screen.availHeight);
+            }""")
+        except Exception:
+            # Fallback: Use init script for next page loads
+            try:
+                page.context.add_init_script("""
+                    window.moveTo(0, 0);
+                    window.resizeTo(screen.availWidth, screen.availHeight);
+                """)
+            except Exception:
+                pass  # Window maximization is non-critical
 
         print(f"🔗 Öffne: {book_url}")
         try:

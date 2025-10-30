@@ -1,4 +1,4 @@
-# Edubase to PDF - PDF Builder (PowerShell)
+# Edubase to PDF - PDF Builder (PowerShell - Native Windows mit OCR!)
 # Run this in PowerShell: .\build.ps1
 
 $ErrorActionPreference = "Stop"
@@ -11,7 +11,7 @@ $BOOK_AUTHOR = "Edubase"
 
 Write-Host ""
 Write-Host "========================================================================" -ForegroundColor Cyan
-Write-Host "  📚 Edubase to PDF - PDF Builder with OCR" -ForegroundColor Cyan
+Write-Host "  📚 Edubase to PDF - PDF Builder with OCR (Native Windows)" -ForegroundColor Cyan
 Write-Host "========================================================================" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "Input:  .\input_pages\" -ForegroundColor Yellow
@@ -22,7 +22,7 @@ Write-Host ""
 if (-not (Test-Path ".venv\Scripts\Activate.ps1")) {
     Write-Host "[ERROR] Virtual environment not found!" -ForegroundColor Red
     Write-Host ""
-    Write-Host "Please run setup first." -ForegroundColor Yellow
+    Write-Host "Please run setup_windows.bat first." -ForegroundColor Yellow
     pause
     exit 1
 }
@@ -43,16 +43,27 @@ if ($screenshotCount -eq 0) {
 Write-Host "Found $screenshotCount screenshots" -ForegroundColor Green
 Write-Host ""
 
+# Check for Tesseract
+$tesseractExists = Get-Command tesseract -ErrorAction SilentlyContinue
+if (-not $tesseractExists) {
+    Write-Host "[WARNING] Tesseract OCR not found in PATH!" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "OCR wird nicht funktionieren ohne Tesseract." -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "Install mit:  " -NoNewline
+    Write-Host "winget install -e --id UB-Mannheim.TesseractOCR" -ForegroundColor Cyan
+    Write-Host "Oder folge:   docs\WINDOWS_NATIVE_SETUP.md" -ForegroundColor Cyan
+    Write-Host ""
+    pause
+}
+
+Write-Host "Starting PDF build with OCR..." -ForegroundColor Cyan
+Write-Host ""
+
 # Activate virtual environment
 & .\.venv\Scripts\Activate.ps1
 
 # Run build with new CLI
-Write-Host "Building PDF with OCR..." -ForegroundColor Cyan
-Write-Host ""
-Write-Host "NOTE: This requires ocrmypdf and tesseract." -ForegroundColor Yellow
-Write-Host "      On Windows, use WSL for best compatibility." -ForegroundColor Yellow
-Write-Host ""
-
 python edubase_cli.py build `
     --input "./input_pages" `
     --output "$OUTPUT_FILE" `
@@ -69,13 +80,16 @@ if ($LASTEXITCODE -ne 0) {
     Write-Host ""
     Write-Host "[ERROR] PDF creation failed!" -ForegroundColor Red
     Write-Host ""
-    Write-Host "NOTE: OCR requires ocrmypdf which may not work natively on Windows." -ForegroundColor Yellow
-    Write-Host "      Please use WSL (Windows Subsystem for Linux) instead:" -ForegroundColor Yellow
+    Write-Host "Troubleshooting:" -ForegroundColor Yellow
+    Write-Host "  1. Stelle sicher dass Tesseract installiert ist:" -ForegroundColor Yellow
+    Write-Host "     winget install -e --id UB-Mannheim.TesseractOCR" -ForegroundColor Cyan
     Write-Host ""
-    Write-Host "      1. Install WSL: wsl --install" -ForegroundColor Cyan
-    Write-Host "      2. Open WSL terminal" -ForegroundColor Cyan
-    Write-Host "      3. Navigate to this folder" -ForegroundColor Cyan
-    Write-Host "      4. Run: ./capture.sh and ./build.sh" -ForegroundColor Cyan
+    Write-Host "  2. Prüfe ob deutsche Sprache verfügbar ist:" -ForegroundColor Yellow
+    Write-Host "     tesseract --list-langs" -ForegroundColor Cyan
+    Write-Host "     (sollte 'deu' zeigen)" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "  3. Siehe vollständige Anleitung:" -ForegroundColor Yellow
+    Write-Host "     docs\WINDOWS_NATIVE_SETUP.md" -ForegroundColor Cyan
     Write-Host ""
     pause
     exit 1
@@ -83,10 +97,17 @@ if ($LASTEXITCODE -ne 0) {
 
 Write-Host ""
 Write-Host "========================================================================" -ForegroundColor Green
-Write-Host "  🎉 Success! PDF created!" -ForegroundColor Green
+Write-Host "  ✓ SUCCESS! PDF created!" -ForegroundColor Green
 Write-Host "========================================================================" -ForegroundColor Green
+Write-Host ""
+Write-Host "PDF Location: " -NoNewline
+Write-Host "$OUTPUT_FILE" -ForegroundColor Yellow
 Write-Host ""
 Write-Host "To open the PDF:" -ForegroundColor Cyan
 Write-Host "  start $OUTPUT_FILE" -ForegroundColor Yellow
 Write-Host ""
+Write-Host "To test OCR (text should be searchable):" -ForegroundColor Cyan
+Write-Host "  Open PDF and press Ctrl+F" -ForegroundColor Yellow
+Write-Host ""
 pause
+

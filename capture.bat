@@ -1,5 +1,5 @@
 @echo off
-REM Edubase to PDF - Screenshot Capture (Windows)
+REM Edubase to PDF - Screenshot Capture (Windows Nativ)
 REM Run this in Command Prompt or PowerShell
 
 setlocal enabledelayedexpansion
@@ -19,19 +19,24 @@ echo Book:   %BOOK_URL%
 echo Pages:  %PAGES%
 echo.
 
+
 REM Check if virtual environment exists
 if not exist ".venv\Scripts\activate.bat" (
     echo [ERROR] Virtual environment not found!
     echo.
-    echo Please run setup first:
-    echo   python -m venv .venv
-    echo   .venv\Scripts\activate.bat
-    echo   pip install -r requirements.txt
-    echo   playwright install chromium
+    echo Please run setup_windows.bat first.
     echo.
     pause
     exit /b 1
 )
+
+echo Starting capture...
+echo.
+echo WICHTIG waehrend Capture:
+echo   - Browser-Fenster NICHT minimieren
+echo   - NICHT in den Browser klicken
+echo   - OK: Andere Programme nutzen
+echo.
 
 REM Activate virtual environment
 call .venv\Scripts\activate.bat
@@ -54,7 +59,11 @@ if errorlevel 1 (
 
 echo.
 echo ========================================================================
-echo   Next step: Run build.bat to create PDF
+echo   Capture Complete!
 echo ========================================================================
+echo.
+echo Screenshots saved to: .\input_pages\
+echo.
+echo Next step: .\build.bat
 echo.
 pause

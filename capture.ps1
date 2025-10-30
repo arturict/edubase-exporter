@@ -1,4 +1,4 @@
-# Edubase to PDF - Screenshot Capture (PowerShell)
+# Edubase to PDF - Screenshot Capture (PowerShell - Native Windows)
 # Run this in PowerShell: .\capture.ps1
 
 $ErrorActionPreference = "Stop"
@@ -29,23 +29,24 @@ Write-Host ""
 if (-not (Test-Path ".venv\Scripts\Activate.ps1")) {
     Write-Host "[ERROR] Virtual environment not found!" -ForegroundColor Red
     Write-Host ""
-    Write-Host "Please run setup first:" -ForegroundColor Yellow
-    Write-Host "  python -m venv .venv"
-    Write-Host "  .\.venv\Scripts\Activate.ps1"
-    Write-Host "  pip install -r requirements.txt"
-    Write-Host "  playwright install chromium"
+    Write-Host "Please run setup_windows.bat first." -ForegroundColor Yellow
     Write-Host ""
     pause
     exit 1
 }
 
+Write-Host "Starting capture..." -ForegroundColor Cyan
+Write-Host ""
+Write-Host "WICHTIG während Capture:" -ForegroundColor Yellow
+Write-Host "  - Browser-Fenster NICHT minimieren" -ForegroundColor Yellow
+Write-Host "  - NICHT in den Browser klicken" -ForegroundColor Yellow
+Write-Host "  - OK: Andere Programme nutzen" -ForegroundColor Green
+Write-Host ""
+
 # Activate virtual environment
 & .\.venv\Scripts\Activate.ps1
 
 # Run capture with new CLI
-Write-Host "Starting capture..." -ForegroundColor Cyan
-Write-Host ""
-
 python edubase_cli.py capture `
     --book-url "$BOOK_URL" `
     --pages $PAGES `
@@ -70,3 +71,4 @@ Write-Host "Next step: " -NoNewline
 Write-Host ".\build.ps1" -ForegroundColor Yellow
 Write-Host ""
 pause
+

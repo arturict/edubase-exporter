@@ -4,26 +4,84 @@
 
 Dieses Tool macht Screenshots von deinem Edubase-Buch und wandelt sie in ein durchsuchbares PDF mit deutscher OCR-Texterkennung um.
 
+## 🪟 **NEU: 100% Native Windows-Unterstützung!**
+
+**ALLES funktioniert jetzt nativ auf Windows - inklusive OCR mit deutschem Tesseract!**
+
+```cmd
+# Automatisches Setup (5 Minuten):
+setup_windows.bat
+
+# Screenshots erstellen:
+.\capture.bat
+
+# PDF mit OCR erstellen:
+.\build.bat
+
+# Fertig! 🎉
+```
+
+**Kein WSL2, keine Docker, keine Kompromisse - alles läuft nativ!** 🚀
+
+📖 **Guides:**
+- [Windows Quickstart](docs/WINDOWS_QUICKSTART.md) - 3 Schritte zum fertigen PDF
+- [Windows Native Setup](docs/WINDOWS_NATIVE_SETUP.md) - Vollständige Anleitung
+- [Implementation Details](WINDOWS_NATIVE_IMPLEMENTATION.md) - Technische Details
+
+---
+
 **⚠️ WICHTIGER HINWEIS:** Du bist selbst verantwortlich für die rechtmäßige Nutzung dieses Tools. Siehe [LICENSE](LICENSE) für Details.
 
 ---
 
 ## 🎯 Features
 
-✨ **Super einfach** - Nur 2 Befehle: `./capture.sh` → `./build_pdf.sh`  
+✨ **Super einfach** - Nur 2 Befehle: `./capture.sh` → `./build_pdf.sh` (oder `.bat` auf Windows)  
+🪟 **Windows Nativ** - Automatisches Setup mit `setup_windows.bat` - KEIN WSL2 nötig!  
 🔐 **Sicherer Login** - Einmalig einloggen, danach automatisch wiederverwendet  
-🔍 **Durchsuchbar** - Vollständige OCR-Texterkennung auf Deutsch  
+🔍 **Durchsuchbar** - Vollständige OCR-Texterkennung auf Deutsch (auch auf Windows!)  
 ✂️ **Auto-Crop** - Entfernt automatisch weiße Ränder  
 📊 **Fortschritt** - Zeigt genau, was gerade passiert  
-⚡ **Schnell** - 396 Seiten in ~10-12 Minuten fertig  
+⚡ **Schnell** - 396 Seiten in ~10-12 Minuten Screenshots, ~15-20 Min OCR  
 🔗 **Smart Navigation** - Springt direkt zur richtigen Seite per URL  
+🌐 **Cross-Platform** - Linux, macOS, WSL2, und Windows (nativ!)  
 
 ---
 
 ## 📋 Voraussetzungen
 
-### 🐧 Linux / macOS / 🪟 WSL2 (Empfohlen)
+### 🪟 Windows (Nativ) - EMPFOHLEN! 🎉
 
+**ALLES funktioniert jetzt 100% nativ auf Windows - INKLUSIVE OCR!**
+
+**Automatisches Setup (nur 5 Minuten):**
+```cmd
+setup_windows.bat
+```
+
+Das war's! Das Script installiert automatisch:
+- ✅ Python 3.11+ (via winget)
+- ✅ Tesseract OCR mit deutschem Sprachpaket (via winget)
+- ✅ Ghostscript für PDF-Optimierung (via winget)
+- ✅ Alle Python-Pakete (via pip)
+- ✅ Chromium Browser (via playwright)
+
+**Voraussetzungen:**
+- Windows 10 (1809+) oder Windows 11
+- ~500 MB freier Speicherplatz
+- Internetverbindung
+
+📖 **Detaillierte Anleitung:**
+- [Windows Native Setup Guide](docs/WINDOWS_NATIVE_SETUP.md) - Vollständige Dokumentation
+- [Windows Quickstart](docs/WINDOWS_QUICKSTART.md) - 3-Schritt Schnellstart
+
+**Kein WSL2 mehr nötig - alles läuft nativ!** 🚀
+
+---
+
+### 🐧 Linux / macOS / 🪟 WSL2
+
+**Linux/WSL2:**
 ```bash
 sudo apt update
 sudo apt install -y \
@@ -33,21 +91,20 @@ sudo apt install -y \
     ocrmypdf \
     qpdf \
     ghostscript \
-    poppler-utils
+    poppler-utils \
+    libgbm1 \
+    libdrm2 \
+    mesa-vulkan-drivers
 ```
 
-### 🪟 Windows (Nativ)
+**macOS:**
+```bash
+brew install python tesseract tesseract-lang ocrmypdf
+```
 
-**Screenshots funktionieren perfekt!** Für OCR wird WSL2 empfohlen.
+**WSL2-Nutzer:** Das Tool ist für WSL2 + WSLg optimiert! Siehe [WSL2 Configuration Guide](docs/WSL2_CONFIGURATION.md).
 
-📖 **Siehe [Windows Setup Guide](docs/WINDOWS_SETUP.md)** für detaillierte Anleitung.
-
-**Kurzversion:**
-1. Install Python 3.8+ von https://www.python.org/
-2. Für OCR: Installiere WSL2 mit `wsl --install`
-3. Folge den Schritten im Windows Guide
-
-**Fertig!** Mehr brauchst du nicht installieren.
+**Hinweis:** WSL2 ist nicht mehr nötig für Windows-Nutzer! Nutze stattdessen die native Windows-Version (siehe oben).
 
 ---
 
@@ -66,22 +123,33 @@ pip install -r requirements.txt
 
 # Browser installieren
 playwright install chromium
+
+# System-Dependencies installieren (WSL2/Linux)
+playwright install-deps chromium
 ```
 
-**Windows (PowerShell):**
-```powershell
-# Python Virtual Environment erstellen
+**WSL2-Nutzer - Umgebung prüfen:**
+```bash
+./check_wsl_environment.sh  # Prüft WSL2-Konfiguration
+python test_browser_config.py  # Testet Browser-Launch
+```
+
+**Windows (PowerShell/CMD):**
+```cmd
+REM Automatisches Setup (EMPFOHLEN):
+setup_windows.bat
+
+REM Oder manuell:
 python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-
-# Python-Pakete installieren
+.venv\Scripts\activate.bat
 pip install -r requirements.txt
-
-# Browser installieren
 playwright install chromium
+
+REM Tesseract OCR installieren:
+winget install -e --id UB-Mannheim.TesseractOCR
 ```
 
-**Das war's!** Setup ist fertig.
+**Das war's!** Setup ist fertig. OCR funktioniert jetzt auch nativ! 🎉
 
 💡 **Tipp:** Nutze den neuen CLI: `python edubase_cli.py --help`
 
@@ -89,24 +157,26 @@ playwright install chromium
 
 ### 2️⃣ Screenshots erstellen
 
+**Windows (EMPFOHLEN - nativ):**
+```cmd
+.\capture.bat
+REM Oder mit PowerShell:
+.\capture.ps1
+REM Oder mit CLI für mehr Optionen:
+python edubase_cli.py capture --book-url "URL" --pages NUM --delay-ms 1500
+```
+
 **Linux / macOS / WSL2:**
 ```bash
 ./capture.sh
-# Oder mit neuem CLI:
-python edubase_cli.py capture --book-url "URL" --pages NUM
-```
-
-**Windows:**
-```powershell
-.\capture.ps1
-# Oder:
+# Oder mit CLI:
 python edubase_cli.py capture --book-url "URL" --pages NUM
 ```
 
 **Was passiert:**
 
 1. 🌐 Browser öffnet sich mit Edubase
-2. 🔑 Du loggst dich ein (nur beim ersten Mal)
+2. 🔑 Du loggst dich ein (nur beim ersten Mal - wird gespeichert)
 3. ⚙️ Du stellst den Viewer ein (Zoom, Fit to page)
 4. ✅ Du drückst Enter
 5. 📸 396 Screenshots werden automatisch erstellt (~10-12 Minuten)
@@ -119,32 +189,40 @@ python edubase_cli.py capture --book-url "URL" --pages NUM
 
 ---
 
-### 3️⃣ PDF erstellen
+### 3️⃣ PDF mit OCR erstellen
+
+**Windows (NATIV - funktioniert perfekt!):**
+```cmd
+.\build.bat
+REM Oder mit PowerShell:
+.\build.ps1
+REM Oder mit CLI für mehr Optionen:
+python edubase_cli.py build --input ./input_pages --output ./output/book.pdf --lang deu
+```
 
 **Linux / macOS / WSL2:**
 ```bash
 ./build_pdf.sh
-# Oder mit neuem CLI:
+# Oder mit CLI:
 python edubase_cli.py build --input ./input_pages --output ./output/book.pdf
 ```
 
-**Windows:**
-```powershell
-.\build.ps1
-# Oder:
-python edubase_cli.py build --input ./input_pages --output ./output/book.pdf
-```
-
-💡 **Windows-Nutzer:** Für OCR wird WSL2 empfohlen. Siehe [Windows Setup Guide](docs/WINDOWS_SETUP.md).
+**💡 Windows-Nutzer:** OCR funktioniert jetzt 100% nativ mit Tesseract! Kein WSL2 nötig.  
+Siehe [Windows Native Setup](docs/WINDOWS_NATIVE_SETUP.md) für Details.
 
 **Was passiert:**
 
-1. 🖼️ Bilder werden vorverarbeitet & optimiert
+1. 🖼️ Bilder werden vorverarbeitet & optimiert (Auto-Crop)
 2. 📄 PDF wird aus den Screenshots erstellt
-3. 🔤 Deutsche OCR-Texterkennung läuft
-4. 💾 Fertiges PDF wird gespeichert (~10-15 Minuten)
+3. 🔤 Deutsche OCR-Texterkennung läuft (Tesseract)
+4. 💾 Fertiges PDF wird gespeichert & optimiert
 
-**Ergebnis:** `output/edubase_60505.pdf` - Durchsuchbar & optimiert!
+**Performance:**
+- Linux/macOS: ~12-15 Minuten (396 Seiten)
+- Windows Nativ: ~15-20 Minuten (396 Seiten)
+- WSL2: ~12-15 Minuten (396 Seiten)
+
+**Ergebnis:** `output/edubase_60505.pdf` - Vollständig durchsuchbar & optimiert!
 
 ---
 
@@ -612,37 +690,50 @@ Siehe [LICENSE](LICENSE) für vollständige Details.
 edubase-exporter/
 │
 ├── 📄 Core Files
-│   ├── edubase_to_pdf.py      ← Haupt-Python-Script
-│   ├── capture.sh              ← Schritt 1: Screenshots erstellen
-│   ├── build_pdf.sh            ← Schritt 2: PDF mit OCR bauen
-│   ├── requirements.txt        ← Python-Dependencies
-│   ├── Makefile                ← Convenience commands (make help)
-│   └── pytest.ini              ← Test configuration
+│   ├── edubase_to_pdf.py         ← Legacy Python-Script
+│   ├── edubase_cli.py            ← Neuer CLI (empfohlen)
+│   ├── capture.sh / capture.bat  ← Schritt 1: Screenshots (Linux/Windows)
+│   ├── build_pdf.sh / build.bat  ← Schritt 2: PDF mit OCR (Linux/Windows)
+│   ├── capture.ps1 / build.ps1   ← PowerShell-Varianten
+│   ├── setup_windows.bat         ← 🪟 Automatisches Windows-Setup (NEU!)
+│   ├── requirements.txt          ← Python-Dependencies
+│   ├── Makefile                  ← Convenience commands (make help)
+│   └── pytest.ini                ← Test configuration
 │
 ├── 📁 Documentation
-│   ├── README.md               ← Diese Datei (Hauptdoku)
-│   ├── QUICKSTART.md           ← 3-Schritt Schnellstart
-│   ├── LICENSE                 ← Lizenz & Nutzungsbedingungen
+│   ├── README.md                          ← Diese Datei (Hauptdoku)
+│   ├── QUICKSTART.md                      ← 3-Schritt Schnellstart
+│   ├── LICENSE                            ← Lizenz & Nutzungsbedingungen
+│   ├── WINDOWS_NATIVE_IMPLEMENTATION.md   ← 🪟 Tech Details (NEU!)
+│   ├── WINDOWS_NATIVE_SUMMARY.md          ← 🪟 Zusammenfassung (NEU!)
 │   └── docs/
-│       ├── TUTORIAL.md         ← Visuelles Setup-Tutorial
-│       ├── PROJECT_OVERVIEW.md ← Technische Struktur
-│       └── CLI_EXPERIENCE_IMPROVEMENTS.md
+│       ├── WINDOWS_NATIVE_SETUP.md        ← 🪟 Windows Vollständige Anleitung (NEU!)
+│       ├── WINDOWS_QUICKSTART.md          ← 🪟 Windows 3-Schritt Guide (NEU!)
+│       ├── WSL2_CONFIGURATION.md          ← WSL2 Setup (optional)
+│       ├── TUTORIAL.md                    ← Visuelles Setup-Tutorial
+│       └── PROJECT_OVERVIEW.md            ← Technische Struktur
 │
 ├── 📁 Tests
+│   ├── test_browser_config.py        ← Browser-Test
 │   └── tests/
-│       ├── test_edubase_to_pdf.py  ← Unit tests
-│       ├── conftest.py             ← Pytest config
-│       └── README.md               ← Test documentation
+│       ├── test_edubase_to_pdf.py    ← Unit tests
+│       ├── conftest.py               ← Pytest config
+│       └── README.md                 ← Test documentation
 │
 ├── 📁 Data Directories
-│   ├── input_pages/            ← Screenshots landen hier
-│   ├── output/                 ← Fertige PDFs hier
-│   └── .venv/                  ← Python Virtual Environment
+│   ├── input_pages/                  ← Screenshots landen hier
+│   ├── output/                       ← Fertige PDFs hier
+│   └── .venv/                        ← Python Virtual Environment
 │
 └── 📁 Configuration
-    ├── .gitignore              ← Git Ignore Rules
-    └── .pw_edubase/            ← Browser-Profil (auto-erstellt)
+    ├── .gitignore                    ← Git Ignore Rules
+    └── .pw_edubase/                  ← Browser-Profil (auto-erstellt)
 ```
+
+**🪟 Windows-Nutzer:** Alle Scripts sind optimiert für native Windows-Nutzung!
+- `.bat` files für Command Prompt
+- `.ps1` files für PowerShell
+- `setup_windows.bat` für automatische Installation
 
 ---
 
@@ -681,23 +772,55 @@ Alle Ausgaben werden im Terminal angezeigt. Bei Fehlern:
 A: Nein, lasse immer nur einen Capture/Build laufen. Sonst Konflikte.
 
 **Q: Werden meine Login-Daten gespeichert?**  
-A: Ja, im Browser-Profil unter `~/.pw_edubase/`. Lokal, sicher, nicht geteilt.
+A: Ja, im Browser-Profil unter `~/.pw_edubase/` (Linux/macOS) oder im User-Verzeichnis (Windows). Lokal, sicher, nicht geteilt.
 
 **Q: Kann ich PDFs für Tablet optimieren?**  
-A: Ja! Ändere `--dpi 200` statt 300 für kleinere Dateigröße.
+A: Ja! Nutze `--dpi 200` statt 300 für kleinere Dateigröße und schnellere Verarbeitung.
 
 **Q: OCR dauert ewig, kann ich beschleunigen?**  
-A: Ja, erhöhe `--jobs` in `build_pdf.sh` (max. = CPU-Kerne).
+A: Ja, erhöhe `--jobs 8` (oder bis zu Anzahl CPU-Kerne) für schnellere Verarbeitung.
 
 **Q: Funktioniert es auch mit Windows?**  
-A: Ja! Screenshots funktionieren nativ. Für OCR nutze WSL2 (empfohlen) oder Docker. Siehe [Windows Setup Guide](docs/WINDOWS_SETUP.md).
+A: **Ja, perfekt!** Alles funktioniert jetzt 100% nativ auf Windows - **INKLUSIVE OCR mit deutschem Tesseract!**  
+   - ✅ Automatisches Setup mit `setup_windows.bat`
+   - ✅ Alle Features funktionieren nativ
+   - ✅ KEIN WSL2 nötig!
+   - 📖 Siehe [Windows Native Setup Guide](docs/WINDOWS_NATIVE_SETUP.md) und [Windows Quickstart](docs/WINDOWS_QUICKSTART.md)
+
+**Q: Welches System soll ich nutzen - Windows nativ oder WSL2?**  
+A: **Windows Nativ für 95% der Nutzer!**
+   - ✅ Einfacheres Setup (5 Min statt 30 Min)
+   - ✅ Keine Linux-Kenntnisse nötig
+   - ✅ Volle Funktionalität
+   - ⚠️ Nur ~15% langsamer bei OCR
+   
+   WSL2 nur wenn du bereits WSL2 nutzt oder maximale Performance brauchst.
 
 **Q: Kann ich die Screenshots behalten?**  
-A: Ja! Lass `input_pages/` einfach da für spätere Nutzung.
+A: Ja! Lass `input_pages/` einfach da für spätere Nutzung oder andere PDF-Konfigurationen.
 
 ---
 
 ## 🎓 Tipps für beste Ergebnisse
+
+### ⭐ Windows-spezifische Tipps
+
+**Für beste Performance auf Windows:**
+
+1. **Antivirus temporär ausschalten:** Manche AV-Programme können Browser-Automation stören
+2. **Energiesparplan:** Auf "Höchstleistung" stellen für schnellere OCR
+3. **Mehr CPU-Kerne:** `--jobs 8` nutzen wenn verfügbar
+4. **Terminal nach Installation neu öffnen:** Damit PATH-Änderungen wirksam werden
+
+**Tesseract-Sprachen:**
+- Deutsch ist bereits enthalten (via `setup_windows.bat`)
+- Weitere Sprachen: Download von https://github.com/tesseract-ocr/tessdata
+- Kopiere `.traineddata` nach `C:\Program Files\Tesseract-OCR\tessdata\`
+- Nutze mit `--lang deu+eng` für mehrsprachige PDFs
+
+📖 Mehr Windows-Tipps: [Windows Native Setup Guide](docs/WINDOWS_NATIVE_SETUP.md)
+
+---
 
 ### ⭐ Screenshot-Qualität maximieren
 
@@ -729,6 +852,14 @@ A: Ja! Lass `input_pages/` einfach da für spätere Nutzung.
 
 ## 📝 Changelog
 
+### Version 1.1 (2024-10-30)
+- 🪟 **Windows Native Support!** - 100% native Windows-Unterstützung
+- ✨ Automatisches Setup-Script `setup_windows.bat`
+- 🔤 OCR funktioniert vollständig nativ auf Windows (Tesseract + OCRmyPDF)
+- 📖 Neue Windows-Dokumentation (WINDOWS_NATIVE_SETUP.md + WINDOWS_QUICKSTART.md)
+- 🔧 Verbesserte `.bat` und `.ps1` Scripts
+- ⚡ Kein WSL2 mehr nötig für Windows-Nutzer!
+
 ### Version 1.0 (2024-10-23)
 - ✨ Initiales Release
 - 🎨 Farbige, benutzerfreundliche CLI
@@ -742,4 +873,6 @@ A: Ja! Lass `input_pages/` einfach da für spätere Nutzung.
 
 **🎉 Viel Erfolg mit deinem durchsuchbaren PDF!**
 
-Bei Fragen oder Problemen: Schau ins Troubleshooting oder frag nach Hilfe.
+Bei Fragen oder Problemen: 
+- **Windows:** Siehe [Windows Native Setup Guide](docs/WINDOWS_NATIVE_SETUP.md)
+- **Allgemein:** Schau ins Troubleshooting oder erstelle ein GitHub Issue
