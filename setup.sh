@@ -61,8 +61,9 @@ done
 if [ -n "$MISSING" ]; then
     echo -e "  ${YELLOW}⚠${NC} Missing:$MISSING"
     echo ""
-    read -p "$(echo -e ${BOLD}${GREEN}Install system dependencies now? (y/n):${NC}) " INSTALL
-    if [[ "$INSTALL" =~ ^[yY]$ ]]; then
+    PROMPT="$(echo -e "${BOLD}${GREEN}Install system dependencies now? (y/n):${NC}")"
+    read -p "$PROMPT " INSTALL
+    if [ "$INSTALL" = "y" ] || [ "$INSTALL" = "Y" ]; then
         echo ""
         echo -e "${BLUE}Installing dependencies...${NC}"
         sudo apt update
@@ -87,8 +88,9 @@ echo ""
 echo -e "${BLUE}➜${NC} Setting up Python virtual environment..."
 if [ -d ".venv" ]; then
     echo -e "  ${YELLOW}⚠${NC} Virtual environment already exists"
-    read -p "$(echo -e ${BOLD}Recreate it? (y/n):${NC}) " RECREATE
-    if [[ "$RECREATE" =~ ^[yY]$ ]]; then
+    RECREATE_PROMPT="$(echo -e "${BOLD}Recreate it? (y/n):${NC}")"
+    read -p "$RECREATE_PROMPT " RECREATE
+    if [ "$RECREATE" = "y" ] || [ "$RECREATE" = "Y" ]; then
         rm -rf .venv
         python3 -m venv .venv
         echo -e "  ${GREEN}✓${NC} Virtual environment recreated"
