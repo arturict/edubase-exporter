@@ -140,11 +140,59 @@ def capture_pages(
         # Apply rendering stabilization to first page load too
         try:
             page.evaluate("""() => {
-                const viewer = document.querySelector('[data-testid="pdfViewer"], .pdfViewer, iframe');
-                if (viewer) {
-                    viewer.scrollIntoView({ behavior: 'auto', block: 'center' });
+                // Hide sidebar/navigation to avoid horizontal scroll
+                const sidebarSelectors = [
+                    '.sidebar', '.nav-sidebar', '.sidebar-nav',
+                    '[role="navigation"]', '.navigation',
+                    '.side-panel', '.left-nav'
+                ];
+                sidebarSelectors.forEach(sel => {
+                    const elem = document.querySelector(sel);
+                    if (elem) elem.style.display = 'none';
+                });
+                
+                // Reset all scrolls to top-left
+                document.documentElement.scrollLeft = 0;
+                document.documentElement.scrollTop = 0;
+                document.body.scrollLeft = 0;
+                document.body.scrollTop = 0;
+                window.scrollTo(0, 0);
+                
+                // Find and center the PDF viewer
+                const viewerSelectors = [
+                    '[data-testid="pdfViewer"]', 
+                    '.pdfViewer', 
+                    '[role="main"]',
+                    'main',
+                    'iframe',
+                    '.pdf-viewer',
+                    '.viewer',
+                    '#viewer'
+                ];
+                
+                let viewer = null;
+                for (let sel of viewerSelectors) {
+                    viewer = document.querySelector(sel);
+                    if (viewer) break;
                 }
-                window.scrollTo({ left: 0, top: 0, behavior: 'auto' });
+                
+                if (viewer) {
+                    // Set viewer to take full width
+                    viewer.style.width = '100vw';
+                    viewer.style.maxWidth = '100%';
+                    viewer.style.marginLeft = '0';
+                    viewer.style.paddingLeft = '0';
+                    
+                    // Scroll into center view
+                    viewer.scrollIntoView({ behavior: 'auto', block: 'center', inline: 'center' });
+                }
+                
+                // Final reset after a brief delay to ensure layout
+                setTimeout(() => {
+                    document.documentElement.scrollLeft = 0;
+                    document.body.scrollLeft = 0;
+                    window.scrollTo(0, 0);
+                }, 100);
             }""")
         except Exception:
             pass
@@ -216,13 +264,59 @@ def capture_pages(
             # Ensure content is centered and fully rendered
             try:
                 page.evaluate("""() => {
-                    // Center view on the book content
-                    const viewer = document.querySelector('[data-testid="pdfViewer"], .pdfViewer, iframe');
-                    if (viewer) {
-                        viewer.scrollIntoView({ behavior: 'auto', block: 'center' });
+                    // Hide sidebar/navigation to avoid horizontal scroll
+                    const sidebarSelectors = [
+                        '.sidebar', '.nav-sidebar', '.sidebar-nav',
+                        '[role="navigation"]', '.navigation',
+                        '.side-panel', '.left-nav'
+                    ];
+                    sidebarSelectors.forEach(sel => {
+                        const elem = document.querySelector(sel);
+                        if (elem) elem.style.display = 'none';
+                    });
+                    
+                    // Reset all scrolls to top-left
+                    document.documentElement.scrollLeft = 0;
+                    document.documentElement.scrollTop = 0;
+                    document.body.scrollLeft = 0;
+                    document.body.scrollTop = 0;
+                    window.scrollTo(0, 0);
+                    
+                    // Find and center the PDF viewer
+                    const viewerSelectors = [
+                        '[data-testid="pdfViewer"]', 
+                        '.pdfViewer', 
+                        '[role="main"]',
+                        'main',
+                        'iframe',
+                        '.pdf-viewer',
+                        '.viewer',
+                        '#viewer'
+                    ];
+                    
+                    let viewer = null;
+                    for (let sel of viewerSelectors) {
+                        viewer = document.querySelector(sel);
+                        if (viewer) break;
                     }
-                    // Also try to center viewport
-                    window.scrollTo({ left: 0, top: 0, behavior: 'auto' });
+                    
+                    if (viewer) {
+                        // Set viewer to take full width
+                        viewer.style.width = '100vw';
+                        viewer.style.maxWidth = '100%';
+                        viewer.style.marginLeft = '0';
+                        viewer.style.paddingLeft = '0';
+                        
+                        // Scroll into center view
+                        viewer.scrollIntoView({ behavior: 'auto', block: 'center', inline: 'center' });
+                    }
+                    
+                    // Final reset after a brief delay to ensure layout
+                    setTimeout(() => {
+                        document.documentElement.scrollLeft = 0;
+                        document.body.scrollLeft = 0;
+                        window.scrollTo(0, 0);
+                    }, 100);
                 }""")
             except Exception:
                 pass
