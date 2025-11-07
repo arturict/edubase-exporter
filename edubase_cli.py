@@ -169,16 +169,14 @@ def capture_pages(
     with sync_playwright() as p:
         console.print("[green]✓[/green] Browser started")
         
-        # Launch browser optimized for Ubuntu
+        # Launch browser optimized for Ubuntu - MINIMAL config
         browser_args = [
             '--disable-blink-features=AutomationControlled',
-            '--disable-dev-shm-usage',  # Avoid /dev/shm issues in containers
-            '--force-device-scale-factor=1',  # Ensure consistent scaling
+            '--disable-dev-shm-usage',
         ]
         
-        # Viewport configuration - LARGER for Edubase PDF viewer
-        # Edubase needs more space to render PDFs properly
-        viewport_config = {'width': 2560, 'height': 1440}
+        # Viewport - use standard Full HD, let Edubase handle its own layout
+        viewport_config = {'width': 1920, 'height': 1080}
         
         # Device scale factor: 1.0 for standard display
         device_scale = 1.0
@@ -221,52 +219,9 @@ def capture_pages(
         except PWTimeout:
             console.print("[yellow]⚠️  Page loading slowly, continuing anyway...[/yellow]")
         
-        # Apply rendering stabilization to first page load too
-        try:
-            # Set browser zoom to 100% to ensure consistent rendering
-            page.evaluate("() => { document.body.style.zoom = '100%'; }")
-            
-            page.evaluate("""() => {
-                // Wait for PDF viewer to be ready
-                const waitForViewer = () => {
-                    return new Promise((resolve) => {
-                        const checkViewer = () => {
-                            const viewerSelectors = [
-                                '[data-testid="pdfViewer"]', 
-                                '.pdfViewer',
-                                'canvas.pdf-canvas',
-                                'canvas',
-                                '[role="main"]',
-                                'iframe'
-                            ];
-                            
-                            for (let sel of viewerSelectors) {
-                                const viewer = document.querySelector(sel);
-                                if (viewer && viewer.offsetHeight > 0) {
-                                    resolve(viewer);
-                                    return;
-                                }
-                            }
-                            setTimeout(checkViewer, 100);
-                        };
-                        checkViewer();
-                    });
-                };
-                
-                waitForViewer().then(viewer => {
-                    // Reset scroll positions
-                    document.documentElement.scrollLeft = 0;
-                    document.documentElement.scrollTop = 0;
-                    document.body.scrollLeft = 0;
-                    document.body.scrollTop = 0;
-                    window.scrollTo(0, 0);
-                });
-            }""")
-        except Exception:
-            pass
-        
-        page.wait_for_load_state("networkidle", timeout=2000)
-        time.sleep(0.5)  # Brief stabilization for initial load
+        # Wait a bit for Edubase to fully load - MINIMAL intervention
+        page.wait_for_load_state("networkidle", timeout=5000)
+        time.sleep(2.0)  # Give Edubase time to render
         
         # Give user time to prepare
         if start_index == 1:
@@ -329,33 +284,9 @@ def capture_pages(
                         progress.advance(task)
                         continue
                 
-                # Ensure content is centered and fully rendered
-                try:
-                    # Set browser zoom to 100%
-                    page.evaluate("() => { document.body.style.zoom = '100%'; }")
-                    
-                    page.evaluate("""() => {
-                        // Wait for PDF to render, then reset scroll
-                        setTimeout(() => {
-                            document.documentElement.scrollLeft = 0;
-                            document.documentElement.scrollTop = 0;
-                            document.body.scrollLeft = 0;
-                            document.body.scrollTop = 0;
-                            window.scrollTo(0, 0);
-                        }, 200);
-                    }""")
-                except Exception:
-                    pass
-                
-                # Wait for all images to load and rendering to stabilize
-                page.wait_for_load_state("networkidle", timeout=2000)
-                time.sleep(1.0)  # Extra wait for rendering to stabilize
-                
-                # Verify content is visible before screenshot
-                try:
-                    page.evaluate("() => { if (!document.body) throw new Error('Page not ready'); }")
-                except Exception:
-                    pass  # Continue anyway - some pages may not have traditional body
+                # Wait for page to render - NO manipulation
+                page.wait_for_load_state("networkidle", timeout=3000)
+                time.sleep(1.5)  # Give Edubase time to render the PDF
                 
                 # Capture screenshot
                 try:
