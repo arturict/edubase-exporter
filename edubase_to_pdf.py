@@ -86,12 +86,13 @@ def capture_pages(
     with sync_playwright() as p:
         print("\n🌐 Starte Browser (Firefox)...")
         
-        # Use Firefox instead of Chromium - often better PDF rendering
+        # Use Firefox with separate profile directory
+        firefox_profile_dir = Path.home() / '.edubase_browser_firefox'
         viewport_config = {'width': 1920, 'height': 1080}
         
         # Persistent context for session reuse
         context = p.firefox.launch_persistent_context(
-            user_data_dir=str(user_data_dir),
+            user_data_dir=str(firefox_profile_dir),
             headless=False,
             viewport=viewport_config,
         )
