@@ -86,29 +86,16 @@ def capture_pages(
     with sync_playwright() as p:
         print("\n🌐 Starte Browser (Chromium)...")
         
-        # Detect WSL environment
-        import platform
-        is_wsl = 'microsoft' in platform.uname().release.lower()
-        
-        # Browser args optimized for WSL2 + WSLg
+        # Browser args optimized for Ubuntu
         browser_args = [
             '--disable-blink-features=AutomationControlled',
-            '--disable-dev-shm-usage',  # Avoid /dev/shm issues in containers/WSL
+            '--disable-dev-shm-usage',  # Avoid /dev/shm issues in containers
         ]
-        if is_wsl:
-            browser_args.extend([
-                '--no-sandbox',  # Required for WSL2 environment
-                '--disable-setuid-sandbox',  # Additional sandbox bypass for WSL
-                '--disable-gpu',  # Disable GPU acceleration (better compatibility with WSLg)
-                '--disable-software-rasterizer',  # Use default rasterizer
-            ])
         
         # Viewport configuration - standard resolution for consistency
-        # WSL2 with WSLg (Wayland) handles display scaling automatically
         viewport_config = {'width': 1920, 'height': 1080}
         
-        # Device scale factor: 1.0 for WSL2 + WSLg
-        # The WSLg compositor handles HiDPI scaling natively
+        # Device scale factor: 1.0 for standard display
         device_scale = 1.0
         
         # Persistent context for session reuse
@@ -129,7 +116,6 @@ def capture_pages(
         
         # Maximize window for full visibility
         try:
-            # WSL2 + WSLg: Window management via JavaScript
             page.evaluate("""() => {
                 window.moveTo(0, 0);
                 window.resizeTo(screen.availWidth, screen.availHeight);
@@ -150,6 +136,21 @@ def capture_pages(
             page.wait_for_load_state("networkidle", timeout=10000)
         except PWTimeout:
             print("⚠️  Seite lädt langsam, fahre trotzdem fort...")
+        
+        # Apply rendering stabilization to first page load too
+        try:
+            page.evaluate("""() => {
+                const viewer = document.querySelector('[data-testid="pdfViewer"], .pdfViewer, iframe');
+                if (viewer) {
+                    viewer.scrollIntoView({ behavior: 'auto', block: 'center' });
+                }
+                window.scrollTo({ left: 0, top: 0, behavior: 'auto' });
+            }""")
+        except Exception:
+            pass
+        
+        page.wait_for_load_state("networkidle", timeout=2000)
+        time.sleep(0.5)  # Brief stabilization for initial load
 
         # Give user time to log in or adjust viewer
         if start_index == 1:
@@ -198,7 +199,10 @@ def capture_pages(
             if book_id and i > start_index:
                 page_url = f"https://app.edubase.ch/#doc/{book_id}/{i}"
                 try:
-                    page.goto(page_url, wait_until="domcontentloaded", timeout=15000)
+                    response = page.goto(page_url, wait_until="domcontentloaded", timeout=15000)
+                    # Check if response indicates an error (4xx, 5xx)
+                    if response and response.status >= 400:
+                        print(f"  [Seite {i:>3}/{total_pages}] ⚠️  Status {response.status}")
                     # Wait for page to render (shorter than full delay)
                     page.wait_for_load_state("networkidle", timeout=3000)
                 except PWTimeout:
@@ -209,8 +213,29 @@ def capture_pages(
                     failed_pages.append(i)
                     continue
             
-            # Small delay to ensure rendering
-            time.sleep(0.5)
+            # Ensure content is centered and fully rendered
+            try:
+                page.evaluate("""() => {
+                    // Center view on the book content
+                    const viewer = document.querySelector('[data-testid="pdfViewer"], .pdfViewer, iframe');
+                    if (viewer) {
+                        viewer.scrollIntoView({ behavior: 'auto', block: 'center' });
+                    }
+                    // Also try to center viewport
+                    window.scrollTo({ left: 0, top: 0, behavior: 'auto' });
+                }""")
+            except Exception:
+                pass
+            
+            # Wait for all images to load and rendering to stabilize
+            page.wait_for_load_state("networkidle", timeout=2000)
+            time.sleep(1.0)  # Extra wait for rendering to stabilize
+            
+            # Verify content is visible before screenshot
+            try:
+                page.evaluate("() => { if (!document.body) throw new Error('Page not ready'); }")
+            except Exception:
+                pass  # Continue anyway - some pages may not have traditional body
 
             # Capture screenshot
             try:

@@ -1,6 +1,6 @@
 #!/bin/bash
-# Edubase Exporter - Automated Setup Script
-# Works on: Linux, macOS, WSL2
+# Edubase Exporter - Automated Setup Script for Ubuntu
+# Only works on Linux (Ubuntu, Debian, etc.)
 
 set -e
 
@@ -14,7 +14,7 @@ NC='\033[0m'
 
 clear
 echo -e "${BLUE}╔════════════════════════════════════════════════════════════════════╗${NC}"
-echo -e "${BLUE}║${NC}  ${BOLD}📦 Edubase Exporter - Setup${NC}                                   ${BLUE}║${NC}"
+echo -e "${BLUE}║${NC}  ${BOLD}📦 Edubase Exporter - Ubuntu Setup${NC}                            ${BLUE}║${NC}"
 echo -e "${BLUE}╚════════════════════════════════════════════════════════════════════╝${NC}"
 echo ""
 
@@ -22,17 +22,17 @@ echo ""
 OS="$(uname -s)"
 case "${OS}" in
     Linux*)     MACHINE=Linux;;
-    Darwin*)    MACHINE=Mac;;
     *)          MACHINE="UNKNOWN:${OS}"
 esac
 
-# Check for WSL
-if grep -qi microsoft /proc/version 2>/dev/null; then
-    MACHINE="WSL2"
-fi
-
 echo -e "${BOLD}Detected System:${NC} ${MACHINE}"
 echo ""
+
+if [ "$MACHINE" != "Linux" ]; then
+    echo -e "${RED}❌ Error: This setup is only for Ubuntu/Linux${NC}"
+    echo "Windows and macOS are no longer supported."
+    exit 1
+fi
 
 # Check Python
 echo -e "${BLUE}➜${NC} Checking Python..."
@@ -43,67 +43,45 @@ else
     echo -e "  ${RED}✗${NC} Python 3 not found!"
     echo ""
     echo -e "${YELLOW}Please install Python 3.8 or higher:${NC}"
-    if [ "$MACHINE" = "Linux" ] || [ "$MACHINE" = "WSL2" ]; then
-        echo "  sudo apt install python3 python3-venv python3-pip"
-    elif [ "$MACHINE" = "Mac" ]; then
-        echo "  brew install python@3"
-    fi
+    echo "  sudo apt install python3 python3-venv python3-pip"
     exit 1
 fi
 echo ""
 
 # Check/Install System Dependencies
-if [ "$MACHINE" = "Linux" ] || [ "$MACHINE" = "WSL2" ]; then
-    echo -e "${BLUE}➜${NC} Checking system dependencies..."
-    
-    MISSING=""
-    for cmd in tesseract ocrmypdf gs; do
-        if ! command -v $cmd &> /dev/null; then
-            MISSING="$MISSING $cmd"
-        fi
-    done
-    
-    if [ -n "$MISSING" ]; then
-        echo -e "  ${YELLOW}⚠${NC} Missing:$MISSING"
-        echo ""
-        read -p "$(echo -e ${BOLD}${GREEN}Install system dependencies now? (y/n):${NC}) " INSTALL
-        if [[ "$INSTALL" =~ ^[yY]$ ]]; then
-            echo ""
-            echo -e "${BLUE}Installing dependencies...${NC}"
-            sudo apt update
-            sudo apt install -y \
-                tesseract-ocr \
-                tesseract-ocr-deu \
-                ocrmypdf \
-                ghostscript \
-                poppler-utils \
-                qpdf
-            echo -e "  ${GREEN}✓${NC} System dependencies installed"
-        else
-            echo -e "  ${YELLOW}⚠${NC} Skipping system dependencies"
-            echo "  Note: OCR will not work without tesseract and ocrmypdf"
-        fi
-    else
-        echo -e "  ${GREEN}✓${NC} All system dependencies found"
+echo -e "${BLUE}➜${NC} Checking system dependencies..."
+
+MISSING=""
+for cmd in tesseract ocrmypdf gs; do
+    if ! command -v $cmd &> /dev/null; then
+        MISSING="$MISSING $cmd"
     fi
+done
+
+if [ -n "$MISSING" ]; then
+    echo -e "  ${YELLOW}⚠${NC} Missing:$MISSING"
     echo ""
-elif [ "$MACHINE" = "Mac" ]; then
-    echo -e "${BLUE}➜${NC} Checking system dependencies..."
-    if ! command -v tesseract &> /dev/null || ! command -v ocrmypdf &> /dev/null; then
-        echo -e "  ${YELLOW}⚠${NC} OCR tools not found"
+    read -p "$(echo -e ${BOLD}${GREEN}Install system dependencies now? (y/n):${NC}) " INSTALL
+    if [[ "$INSTALL" =~ ^[yY]$ ]]; then
         echo ""
-        echo -e "To install OCR dependencies on macOS:"
-        echo -e "  ${YELLOW}brew install tesseract tesseract-lang ocrmypdf${NC}"
-        echo ""
-        read -p "Continue without OCR tools? (y/n): " CONTINUE
-        if [[ ! "$CONTINUE" =~ ^[yY]$ ]]; then
-            exit 1
-        fi
+        echo -e "${BLUE}Installing dependencies...${NC}"
+        sudo apt update
+        sudo apt install -y \
+            tesseract-ocr \
+            tesseract-ocr-deu \
+            ocrmypdf \
+            ghostscript \
+            poppler-utils \
+            qpdf
+        echo -e "  ${GREEN}✓${NC} System dependencies installed"
     else
-        echo -e "  ${GREEN}✓${NC} System dependencies found"
+        echo -e "  ${YELLOW}⚠${NC} Skipping system dependencies"
+        echo "  Note: OCR will not work without tesseract and ocrmypdf"
     fi
-    echo ""
+else
+    echo -e "  ${GREEN}✓${NC} All system dependencies found"
 fi
+echo ""
 
 # Create Virtual Environment
 echo -e "${BLUE}➜${NC} Setting up Python virtual environment..."
@@ -137,11 +115,9 @@ echo ""
 echo -e "${BLUE}➜${NC} Installing Chromium browser for Playwright..."
 playwright install chromium
 
-if [ "$MACHINE" = "Linux" ] || [ "$MACHINE" = "WSL2" ]; then
-    echo ""
-    echo -e "${BLUE}➜${NC} Installing browser dependencies..."
-    playwright install-deps chromium
-fi
+echo ""
+echo -e "${BLUE}➜${NC} Installing browser dependencies..."
+playwright install-deps chromium
 
 echo -e "  ${GREEN}✓${NC} Browser installed"
 echo ""
@@ -184,5 +160,4 @@ echo ""
 echo -e "${BOLD}Tips:${NC}"
 echo -e "  • Edit ${YELLOW}capture.sh${NC} and ${YELLOW}build_pdf.sh${NC} to set your book ID"
 echo -e "  • Use ${YELLOW}python edubase_cli.py --help${NC} for all commands"
-echo -e "  • Check ${YELLOW}docs/WINDOWS_SETUP.md${NC} if on Windows"
 echo ""

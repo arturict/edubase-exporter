@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Edubase to PDF - Cross-platform CLI with excellent UX
-Works on Windows, macOS, and Linux
+Edubase to PDF Exporter - Ubuntu/Linux CLI
+Screenshot capture and PDF builder for Edubase with OCR
 """
 import os
 import sys
@@ -32,7 +32,7 @@ import img2pdf
 import pikepdf
 from playwright.sync_api import sync_playwright, TimeoutError as PWTimeout
 
-# Initialize Rich console with Windows support
+# Initialize Rich console
 console = Console()
 
 
@@ -55,12 +55,10 @@ def ensure_dir(p: Path):
 
 
 def get_system_info():
-    """Get system information for better UX"""
+    """Get system information"""
     import platform
     return {
         'os': platform.system(),
-        'is_windows': platform.system() == 'Windows',
-        'is_wsl': 'microsoft' in platform.uname().release.lower(),
         'python_version': platform.python_version(),
     }
 
@@ -102,10 +100,9 @@ def capture_pages(
     crop_threshold: int,
     crop_margin: int,
 ) -> None:
-    """Capture pages with excellent cross-platform UX"""
+    """Capture pages on Ubuntu with Playwright"""
     
     ensure_dir(out_dir)
-    sys_info = get_system_info()
     
     # Extract book ID
     import re
@@ -118,8 +115,7 @@ def capture_pages(
         f"[bold cyan]📸 Screenshot Capture[/bold cyan]\n\n"
         f"Book: [yellow]{book_url}[/yellow]\n"
         f"Pages: [green]{total_pages}[/green]\n"
-        f"Output: [blue]{out_dir}[/blue]\n"
-        f"Platform: [magenta]{sys_info['os']}[/magenta]",
+        f"Output: [blue]{out_dir}[/blue]",
         border_style="cyan",
         title="[bold]Edubase Exporter[/bold]",
         title_align="left",
@@ -170,33 +166,19 @@ def capture_pages(
         console.print()
     
     # Start browser
-    with console.status("[bold green]Starting browser (Chromium)...[/bold green]"):
-        time.sleep(0.5)
-    
     with sync_playwright() as p:
         console.print("[green]✓[/green] Browser started")
         
-        # Launch browser with cross-platform support
+        # Launch browser optimized for Ubuntu
         browser_args = [
             '--disable-blink-features=AutomationControlled',
-            '--disable-dev-shm-usage',  # Avoid /dev/shm issues in containers/WSL
+            '--disable-dev-shm-usage',  # Avoid /dev/shm issues in containers
         ]
         
-        if sys_info['is_wsl']:
-            # WSL2 + WSLg specific optimizations
-            browser_args.extend([
-                '--no-sandbox',  # Required for WSL2 environment
-                '--disable-setuid-sandbox',  # Additional sandbox bypass for WSL
-                '--disable-gpu',  # Disable GPU acceleration (better compatibility with WSLg)
-                '--disable-software-rasterizer',  # Use default rasterizer
-            ])
-        
         # Viewport configuration - standard resolution for consistency
-        # WSL2 with WSLg (Wayland) handles display scaling automatically
         viewport_config = {'width': 1920, 'height': 1080}
         
-        # Device scale factor: 1.0 for WSL2 + WSLg
-        # The WSLg compositor handles HiDPI scaling natively
+        # Device scale factor: 1.0 for standard display
         device_scale = 1.0
         
         context = p.chromium.launch_persistent_context(
@@ -215,7 +197,6 @@ def capture_pages(
         
         # Maximize window for full visibility
         try:
-            # WSL2 + WSLg: Window management via JavaScript
             page.evaluate("""() => {
                 window.moveTo(0, 0);
                 window.resizeTo(screen.availWidth, screen.availHeight);
@@ -237,6 +218,21 @@ def capture_pages(
             page.wait_for_load_state("networkidle", timeout=10000)
         except PWTimeout:
             console.print("[yellow]⚠️  Page loading slowly, continuing anyway...[/yellow]")
+        
+        # Apply rendering stabilization to first page load too
+        try:
+            page.evaluate("""() => {
+                const viewer = document.querySelector('[data-testid="pdfViewer"], .pdfViewer, iframe');
+                if (viewer) {
+                    viewer.scrollIntoView({ behavior: 'auto', block: 'center' });
+                }
+                window.scrollTo({ left: 0, top: 0, behavior: 'auto' });
+            }""")
+        except Exception:
+            pass
+        
+        page.wait_for_load_state("networkidle", timeout=2000)
+        time.sleep(0.5)  # Brief stabilization for initial load
         
         # Give user time to prepare
         if start_index == 1:
@@ -286,17 +282,42 @@ def capture_pages(
                 if book_id and i > start_index:
                     page_url = f"https://app.edubase.ch/#doc/{book_id}/{i}"
                     try:
-                        page.goto(page_url, wait_until="domcontentloaded", timeout=15000)
+                        response = page.goto(page_url, wait_until="domcontentloaded", timeout=15000)
+                        # Check if response indicates an error (4xx, 5xx)
+                        if response and response.status >= 400:
+                            console.log(f"[yellow]Page {i} returned status {response.status}[/yellow]")
                         page.wait_for_load_state("networkidle", timeout=3000)
                     except PWTimeout:
-                        pass
+                        pass  # Page loaded but networkidle timeout - usually fine
                     except Exception as e:
                         console.log(f"[red]Page {i} navigation failed: {e}[/red]")
                         failed_pages.append(i)
                         progress.advance(task)
                         continue
                 
-                time.sleep(0.5)
+                # Ensure content is centered and fully rendered
+                try:
+                    page.evaluate("""() => {
+                        // Center view on the book content
+                        const viewer = document.querySelector('[data-testid="pdfViewer"], .pdfViewer, iframe');
+                        if (viewer) {
+                            viewer.scrollIntoView({ behavior: 'auto', block: 'center' });
+                        }
+                        // Also try to center viewport
+                        window.scrollTo({ left: 0, top: 0, behavior: 'auto' });
+                    }""")
+                except Exception:
+                    pass
+                
+                # Wait for all images to load and rendering to stabilize
+                page.wait_for_load_state("networkidle", timeout=2000)
+                time.sleep(1.0)  # Extra wait for rendering to stabilize
+                
+                # Verify content is visible before screenshot
+                try:
+                    page.evaluate("() => { if (!document.body) throw new Error('Page not ready'); }")
+                except Exception:
+                    pass  # Continue anyway - some pages may not have traditional body
                 
                 # Capture screenshot
                 try:
@@ -358,7 +379,7 @@ def build_pdf_from_images(images: List[Path], out_pdf: Path, dpi: Optional[int])
 
 
 def run_ocr(input_pdf: Path, output_pdf: Path, lang: str, jobs: int, optimize: int) -> None:
-    """Run OCR with cross-platform support"""
+    """Run OCR on Ubuntu with ocrmypdf"""
     cmd = [
         "ocrmypdf",
         "--language", lang,
@@ -370,12 +391,7 @@ def run_ocr(input_pdf: Path, output_pdf: Path, lang: str, jobs: int, optimize: i
         str(output_pdf)
     ]
     
-    sys_info = get_system_info()
-    if sys_info['is_windows'] or sys_info['is_wsl']:
-        # On Windows/WSL, ensure proper shell handling
-        subprocess.run(cmd, check=True, shell=False)
-    else:
-        subprocess.run(cmd, check=True)
+    subprocess.run(cmd, check=True)
 
 
 def set_metadata(pdf_path: Path, title: Optional[str], author: Optional[str],
@@ -410,7 +426,7 @@ def build_pipeline(
     subject: Optional[str],
     keywords: Optional[str],
 ) -> None:
-    """Build PDF with excellent cross-platform UX"""
+    """Build PDF with OCR on Ubuntu/Linux"""
     
     sys_info = get_system_info()
     
@@ -535,10 +551,7 @@ def build_pipeline(
             console.print(f"[red]❌ OCR failed: {e}[/red]")
             console.print()
             console.print("[yellow]Make sure ocrmypdf is installed:[/yellow]")
-            if sys_info['is_windows']:
-                console.print("  Windows: Install via WSL or use Docker")
-            else:
-                console.print("  Linux/Mac: sudo apt install ocrmypdf tesseract-ocr-deu")
+            console.print("  Ubuntu/Linux: sudo apt install ocrmypdf tesseract-ocr-deu")
             sys.exit(1)
     
     console.print("[green]✓[/green] OCR completed")
@@ -573,13 +586,7 @@ def build_pipeline(
     console.print()
     
     # Open suggestion
-    if sys_info['is_windows']:
-        open_cmd = f"start {output_pdf}"
-    elif sys_info['os'] == 'Darwin':
-        open_cmd = f"open {output_pdf}"
-    else:
-        open_cmd = f"xdg-open {output_pdf}"
-    
+    open_cmd = f"xdg-open {output_pdf}"
     console.print(f"[bold cyan]Open PDF:[/bold cyan] [yellow]{open_cmd}[/yellow]")
     console.print()
 
@@ -590,9 +597,7 @@ def build_pipeline(
 @click.version_option(version="1.0.0", prog_name="edubase-exporter")
 def cli():
     """
-    Edubase to PDF Exporter - Cross-platform tool for creating searchable PDFs
-    
-    Works on Windows, macOS, and Linux with excellent user experience.
+    Edubase to PDF Exporter - Ubuntu/Linux tool for creating searchable PDFs
     """
     pass
 
@@ -696,8 +701,6 @@ def check():
     info.add_column("Value")
     info.add_row("Operating System", sys_info['os'])
     info.add_row("Python Version", sys_info['python_version'])
-    if sys_info['is_wsl']:
-        info.add_row("Environment", "WSL (Windows Subsystem for Linux)")
     
     console.print(info)
     console.print()
@@ -737,13 +740,8 @@ def check():
     console.print()
     
     # Installation hints
-    if sys_info['is_windows']:
-        console.print("[yellow]Windows users:[/yellow] Use WSL2 for best compatibility")
-        console.print("Install ocrmypdf in WSL: [cyan]sudo apt install ocrmypdf tesseract-ocr-deu[/cyan]")
-    else:
-        console.print("[cyan]Install missing tools:[/cyan]")
-        console.print("  Linux: [yellow]sudo apt install ocrmypdf tesseract-ocr-deu[/yellow]")
-        console.print("  macOS: [yellow]brew install ocrmypdf tesseract-lang[/yellow]")
+    console.print("[cyan]Install missing tools on Ubuntu:[/cyan]")
+    console.print("  [yellow]sudo apt install ocrmypdf tesseract-ocr-deu[/yellow]")
     
     console.print()
 
