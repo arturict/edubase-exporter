@@ -84,28 +84,16 @@ def capture_pages(
         print("⚠️  Konnte Buch ID nicht aus URL extrahieren, nutze Fallback-Methode")
 
     with sync_playwright() as p:
-        print("\n🌐 Starte Browser (Chromium)...")
+        print("\n🌐 Starte Browser (Firefox)...")
         
-        # Browser args optimized for Ubuntu
-        browser_args = [
-            '--disable-blink-features=AutomationControlled',
-            '--disable-dev-shm-usage',  # Avoid /dev/shm issues in containers
-        ]
-        
-        # Viewport configuration - LARGER for Edubase PDF viewer
+        # Use Firefox instead of Chromium - often better PDF rendering
         viewport_config = {'width': 1920, 'height': 1080}
         
-        # Device scale factor: 1.0 for standard display
-        device_scale = 1.0
-        
         # Persistent context for session reuse
-        context = p.chromium.launch_persistent_context(
+        context = p.firefox.launch_persistent_context(
             user_data_dir=str(user_data_dir),
             headless=False,
             viewport=viewport_config,
-            device_scale_factor=device_scale,
-            args=browser_args,
-            ignore_default_args=['--enable-automation'],  # Hide automation indicators
         )
         
         # Set default timeouts

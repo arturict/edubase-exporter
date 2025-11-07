@@ -169,25 +169,13 @@ def capture_pages(
     with sync_playwright() as p:
         console.print("[green]✓[/green] Browser started")
         
-        # Launch browser optimized for Ubuntu - MINIMAL config
-        browser_args = [
-            '--disable-blink-features=AutomationControlled',
-            '--disable-dev-shm-usage',
-        ]
-        
-        # Viewport - use standard Full HD, let Edubase handle its own layout
+        # Use Firefox instead of Chromium - often better PDF rendering
         viewport_config = {'width': 1920, 'height': 1080}
         
-        # Device scale factor: 1.0 for standard display
-        device_scale = 1.0
-        
-        context = p.chromium.launch_persistent_context(
+        context = p.firefox.launch_persistent_context(
             user_data_dir=str(user_data_dir),
             headless=False,
             viewport=viewport_config,
-            device_scale_factor=device_scale,
-            args=browser_args,
-            ignore_default_args=['--enable-automation'],  # Hide automation indicators
         )
         
         context.set_default_timeout(30000)
