@@ -90,10 +90,11 @@ def capture_pages(
         browser_args = [
             '--disable-blink-features=AutomationControlled',
             '--disable-dev-shm-usage',  # Avoid /dev/shm issues in containers
+            '--force-device-scale-factor=1',  # Ensure consistent scaling
         ]
         
-        # Viewport configuration - standard resolution for consistency
-        viewport_config = {'width': 1920, 'height': 1080}
+        # Viewport configuration - LARGER for Edubase PDF viewer
+        viewport_config = {'width': 2560, 'height': 1440}
         
         # Device scale factor: 1.0 for standard display
         device_scale = 1.0
@@ -139,60 +140,44 @@ def capture_pages(
         
         # Apply rendering stabilization to first page load too
         try:
+            # Set browser zoom to 100% to ensure consistent rendering
+            page.evaluate("() => { document.body.style.zoom = '100%'; }")
+            
             page.evaluate("""() => {
-                // Hide sidebar/navigation to avoid horizontal scroll
-                const sidebarSelectors = [
-                    '.sidebar', '.nav-sidebar', '.sidebar-nav',
-                    '[role="navigation"]', '.navigation',
-                    '.side-panel', '.left-nav'
-                ];
-                sidebarSelectors.forEach(sel => {
-                    const elem = document.querySelector(sel);
-                    if (elem) elem.style.display = 'none';
-                });
+                // Wait for PDF viewer to be ready
+                const waitForViewer = () => {
+                    return new Promise((resolve) => {
+                        const checkViewer = () => {
+                            const viewerSelectors = [
+                                '[data-testid="pdfViewer"]', 
+                                '.pdfViewer',
+                                'canvas.pdf-canvas',
+                                'canvas',
+                                '[role="main"]',
+                                'iframe'
+                            ];
+                            
+                            for (let sel of viewerSelectors) {
+                                const viewer = document.querySelector(sel);
+                                if (viewer && viewer.offsetHeight > 0) {
+                                    resolve(viewer);
+                                    return;
+                                }
+                            }
+                            setTimeout(checkViewer, 100);
+                        };
+                        checkViewer();
+                    });
+                };
                 
-                // Reset all scrolls to top-left
-                document.documentElement.scrollLeft = 0;
-                document.documentElement.scrollTop = 0;
-                document.body.scrollLeft = 0;
-                document.body.scrollTop = 0;
-                window.scrollTo(0, 0);
-                
-                // Find and center the PDF viewer
-                const viewerSelectors = [
-                    '[data-testid="pdfViewer"]', 
-                    '.pdfViewer', 
-                    '[role="main"]',
-                    'main',
-                    'iframe',
-                    '.pdf-viewer',
-                    '.viewer',
-                    '#viewer'
-                ];
-                
-                let viewer = null;
-                for (let sel of viewerSelectors) {
-                    viewer = document.querySelector(sel);
-                    if (viewer) break;
-                }
-                
-                if (viewer) {
-                    // Set viewer to take full width
-                    viewer.style.width = '100vw';
-                    viewer.style.maxWidth = '100%';
-                    viewer.style.marginLeft = '0';
-                    viewer.style.paddingLeft = '0';
-                    
-                    // Scroll into center view
-                    viewer.scrollIntoView({ behavior: 'auto', block: 'center', inline: 'center' });
-                }
-                
-                // Final reset after a brief delay to ensure layout
-                setTimeout(() => {
+                waitForViewer().then(viewer => {
+                    // Reset scroll positions
                     document.documentElement.scrollLeft = 0;
+                    document.documentElement.scrollTop = 0;
                     document.body.scrollLeft = 0;
+                    document.body.scrollTop = 0;
                     window.scrollTo(0, 0);
-                }, 100);
+                });
             }""")
         except Exception:
             pass
@@ -263,60 +248,18 @@ def capture_pages(
             
             # Ensure content is centered and fully rendered
             try:
+                # Set browser zoom to 100%
+                page.evaluate("() => { document.body.style.zoom = '100%'; }")
+                
                 page.evaluate("""() => {
-                    // Hide sidebar/navigation to avoid horizontal scroll
-                    const sidebarSelectors = [
-                        '.sidebar', '.nav-sidebar', '.sidebar-nav',
-                        '[role="navigation"]', '.navigation',
-                        '.side-panel', '.left-nav'
-                    ];
-                    sidebarSelectors.forEach(sel => {
-                        const elem = document.querySelector(sel);
-                        if (elem) elem.style.display = 'none';
-                    });
-                    
-                    // Reset all scrolls to top-left
-                    document.documentElement.scrollLeft = 0;
-                    document.documentElement.scrollTop = 0;
-                    document.body.scrollLeft = 0;
-                    document.body.scrollTop = 0;
-                    window.scrollTo(0, 0);
-                    
-                    // Find and center the PDF viewer
-                    const viewerSelectors = [
-                        '[data-testid="pdfViewer"]', 
-                        '.pdfViewer', 
-                        '[role="main"]',
-                        'main',
-                        'iframe',
-                        '.pdf-viewer',
-                        '.viewer',
-                        '#viewer'
-                    ];
-                    
-                    let viewer = null;
-                    for (let sel of viewerSelectors) {
-                        viewer = document.querySelector(sel);
-                        if (viewer) break;
-                    }
-                    
-                    if (viewer) {
-                        // Set viewer to take full width
-                        viewer.style.width = '100vw';
-                        viewer.style.maxWidth = '100%';
-                        viewer.style.marginLeft = '0';
-                        viewer.style.paddingLeft = '0';
-                        
-                        // Scroll into center view
-                        viewer.scrollIntoView({ behavior: 'auto', block: 'center', inline: 'center' });
-                    }
-                    
-                    // Final reset after a brief delay to ensure layout
+                    // Wait for PDF to render, then reset scroll
                     setTimeout(() => {
                         document.documentElement.scrollLeft = 0;
+                        document.documentElement.scrollTop = 0;
                         document.body.scrollLeft = 0;
+                        document.body.scrollTop = 0;
                         window.scrollTo(0, 0);
-                    }, 100);
+                    }, 200);
                 }""")
             except Exception:
                 pass
